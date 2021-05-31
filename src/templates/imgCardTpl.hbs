@@ -1,8 +1,10 @@
-<ul>
+
     {{#each hits}}
     <li>
         <div class="photo-card">
-            <img src="{{webformatURL}}" alt="Photo about {{tags}}" />
+            <div class="img-container">
+                            <img src="{{webformatURL}}" alt="Photo about {{tags}}" />
+            </div>
 
             <div class="stats">
                 <p class="stats-item"> <i class="material-icons">thumb_up</i>{{likes}}</p>
@@ -13,4 +15,3 @@
         </div>
     </li>
     {{/each}}
-</ul>
