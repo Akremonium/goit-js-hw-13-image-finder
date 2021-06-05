@@ -2,7 +2,7 @@ import './sass/main.scss';
 
 const debounce = require('lodash.debounce');
 
-import apiService from './js/apiService';
+import fetcher from './js/apiService';
 import { renderer } from './js/renderer';
 import imgCardTpl from './templates/imgCardTpl.hbs';
 
@@ -13,48 +13,24 @@ import { defaults } from '@pnotify/core';
 defaults.closerHover = false;
 
 import { refs } from './js/refs';
-let pageNumber = 1;
 
 refs.input.addEventListener('input', debounce(onInput, 1000));
 
 function onInput() {
-  localStorage.clear;
-  let searchQuery = refs.input.value.trim();
-  localStorage.setItem('input', `${searchQuery}`);
+  fetcher.query = refs.input.value.trim();
+
   refs.gallery.innerHTML = '';
-  if (searchQuery !== '') {
-    pageNumber = 1;
-    apiService(searchQuery, pageNumber).then(data => {
-      if (data.totalHits > 0) {
+  fetcher.resetPage();
+
+  if (fetcher.query !== '') {
+    fetcher.fetchImg().then(data => {
+      if (data.length > 0) {
         renderer(data, imgCardTpl);
         refs.input.value = '';
-        pageNumber += 1;
       } else {
         showErrorMsg('Sorry, no matches found.');
       }
     });
-  }
-
-  infiniteScroll(pageNumber);
-
-  function infiniteScroll(pageNumber) {
-    const observer = new IntersectionObserver(onListEnd, {
-      threshold: 0,
-      rootMargin: '500px',
-    });
-
-    observer.observe(refs.anchor);
-
-    function onListEnd([entry]) {
-      if (!entry.isIntersecting) return;
-      else if (refs.gallery.innerHTML !== '') {
-        apiService(searchQuery, ++pageNumber).then(data => {
-          if (data.totalHits !== 0) {
-            renderer(data, imgCardTpl);
-          }
-        });
-      }
-    }
   }
 }
 
@@ -63,4 +39,24 @@ function showErrorMsg(text) {
     title: `${text}`,
     delay: 3000,
   });
+}
+
+infiniteScroll();
+
+function infiniteScroll() {
+  const observer = new IntersectionObserver(onListEnd, {
+    rootMargin: '200px',
+  });
+
+  observer.observe(refs.anchor);
+
+  function onListEnd([entry]) {
+    if (entry.isIntersecting && refs.gallery.innerHTML !== '') {
+      fetcher.fetchImg().then(data => {
+        if (data.totalHits !== 0) {
+          renderer(data, imgCardTpl);
+        }
+      });
+    }
+  }
 }
