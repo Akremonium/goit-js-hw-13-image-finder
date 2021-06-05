@@ -12,15 +12,10 @@ import { error } from '@pnotify/core/dist/PNotify.js';
 import { defaults } from '@pnotify/core';
 defaults.closerHover = false;
 
-const refs = {
-  gallery: document.querySelector('.gallery'),
-  input: document.querySelector('input'),
-  anchor: document.querySelector('.anchore'),
-};
+import { refs } from './js/refs';
 let pageNumber = 1;
 
 refs.input.addEventListener('input', debounce(onInput, 1000));
-infiniteScroll(pageNumber);
 
 function onInput() {
   localStorage.clear;
@@ -39,6 +34,28 @@ function onInput() {
       }
     });
   }
+
+  infiniteScroll(pageNumber);
+
+  function infiniteScroll(pageNumber) {
+    const observer = new IntersectionObserver(onListEnd, {
+      threshold: 0,
+      rootMargin: '500px',
+    });
+
+    observer.observe(refs.anchor);
+
+    function onListEnd([entry]) {
+      if (!entry.isIntersecting) return;
+      else if (refs.gallery.innerHTML !== '') {
+        apiService(searchQuery, ++pageNumber).then(data => {
+          if (data.totalHits !== 0) {
+            renderer(data, imgCardTpl);
+          }
+        });
+      }
+    }
+  }
 }
 
 function showErrorMsg(text) {
@@ -46,24 +63,4 @@ function showErrorMsg(text) {
     title: `${text}`,
     delay: 3000,
   });
-}
-
-function infiniteScroll(pageNumber) {
-  const observer = new IntersectionObserver(onListEnd, {
-    threshold: 0,
-    rootMargin: '500px',
-  });
-
-  observer.observe(refs.anchor);
-
-  function onListEnd([entry]) {
-    if (!entry.isIntersecting) return;
-    else if (refs.gallery.innerHTML !== '') {
-      apiService(localStorage.getItem('input'), ++pageNumber).then(data => {
-        if (data.totalHits !== 0) {
-          renderer(data, imgCardTpl);
-        }
-      });
-    }
-  }
 }
